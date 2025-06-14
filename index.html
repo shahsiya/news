@@ -2,96 +2,106 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>Лента новостей</title>
+  <title>Новости</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; background: #f9f9f9; }
-    h1 {
-      text-align: center;
-      margin-bottom: 20px;
-      color: #333;
-      font-size: 2em;
-    }
+    h1 { text-align: center; margin-bottom: 20px; color: #333; font-size: 2em; }
+
     #controls {
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
       gap: 10px;
-      margin-bottom: 15px;
+      margin-bottom: 20px;
     }
+
     #refreshBtn, #resetFilter {
       padding: 10px 20px;
       font-size: 1em;
-      cursor: pointer;
       background-color: #007bff;
       border: none;
       border-radius: 5px;
       color: white;
+      cursor: pointer;
     }
+
+    #refreshBtn:hover, #resetFilter:hover {
+      background-color: #0056b3;
+    }
+
     #searchInput, #sourceFilter {
       padding: 8px;
       font-size: 1em;
       border-radius: 5px;
       border: 1px solid #ccc;
       min-width: 200px;
-      max-width: 300px;
-      flex-grow: 1;
     }
-    #news {
+
+    #vacancies {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
       gap: 15px;
     }
-    .news-card {
+
+    .vacancy-card {
       border: 1px solid #ddd;
       padding: 15px;
       border-radius: 5px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
       background-color: white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-    .news-title {
+
+    .vacancy-title {
+      font-size: 1.1em;
       font-weight: bold;
-      font-size: 1.2em;
       margin-bottom: 8px;
       color: #222;
     }
-    .news-summary {
-      margin-bottom: 8px;
+
+    .vacancy-desc {
+      margin-bottom: 10px;
       color: #555;
     }
-    .news-link {
+
+    .vacancy-link {
       color: #007bff;
       text-decoration: none;
-      font-weight: 600;
+      font-weight: bold;
     }
-    .news-link:hover {
+
+    .vacancy-link:hover {
       text-decoration: underline;
     }
+
     #pagination {
-      text-align: center;
-      margin-top: 25px;
-      flex-wrap: wrap;
       display: flex;
       justify-content: center;
-      gap: 5px;
+      margin-top: 25px;
+      gap: 6px;
+      flex-wrap: wrap;
     }
+
     #pagination button {
-      margin: 0 3px;
-      padding: 8px 12px;
+      padding: 6px 12px;
       font-size: 1em;
-      cursor: pointer;
       border: 1px solid #007bff;
       background-color: white;
       color: #007bff;
-      border-radius: 5px;
+      border-radius: 4px;
+      cursor: pointer;
     }
+
     #pagination button.active,
     #pagination button:hover {
       background-color: #007bff;
       color: white;
     }
+
     @media (max-width: 700px) {
-      #news { grid-template-columns: 1fr; }
-      #controls { flex-direction: column; align-items: stretch; }
+      #controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
     }
   </style>
 
@@ -112,28 +122,25 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const ITEMS_PER_PAGE = 50;
+    const ITEMS_PER_PAGE = 30;
     let allNews = [];
     let filteredNews = [];
     let currentPage = 1;
 
     async function loadNews() {
-      const container = document.getElementById('news');
+      const container = document.getElementById('vacancies');
       container.innerHTML = '<p>Загрузка новостей...</p>';
+
       try {
         const querySnapshot = await getDocs(collection(db, "news"));
         allNews = [];
-        querySnapshot.forEach(doc => {
-          const newsItem = doc.data();
-          newsItem.id = doc.id;
-          allNews.push(newsItem);
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          data.id = doc.id;
+          allNews.push(data);
         });
 
-        if (allNews.length === 0) {
-          container.innerHTML = '<p>Новостей пока нет.</p>';
-          return;
-        }
-
+        allNews.sort((a, b) => new Date(b.created) - new Date(a.created));
         setupSourceFilter();
         applyFilters();
       } catch (error) {
@@ -155,13 +162,15 @@
     }
 
     function applyFilters() {
-      const searchValue = document.getElementById('searchInput').value.toLowerCase();
-      const sourceValue = document.getElementById('sourceFilter').value;
+      const searchVal = document.getElementById('searchInput').value.toLowerCase();
+      const sourceVal = document.getElementById('sourceFilter').value;
 
       filteredNews = allNews.filter(n => {
-        const title = (n.title || '').toLowerCase();
+        const title = (n.title_ru || n.title_en || '').toLowerCase();
         const source = n.source || '';
-        return title.includes(searchValue) && (sourceValue === '' || source === sourceValue);
+        const matchesSearch = title.includes(searchVal);
+        const matchesSource = sourceVal === '' || source === sourceVal;
+        return matchesSearch && matchesSource;
       });
 
       currentPage = 1;
@@ -170,7 +179,7 @@
     }
 
     function renderPage(page) {
-      const container = document.getElementById('news');
+      const container = document.getElementById('vacancies');
       container.innerHTML = '';
 
       const start = (page - 1) * ITEMS_PER_PAGE;
@@ -178,29 +187,35 @@
       const pageItems = filteredNews.slice(start, end);
 
       if (pageItems.length === 0) {
-        container.innerHTML = '<p>Нет новостей для отображения.</p>';
+        container.innerHTML = '<p>Новостей не найдено.</p>';
         return;
       }
 
-      pageItems.forEach(news => {
+      pageItems.forEach(article => {
         const card = document.createElement('div');
-        card.className = 'news-card';
+        card.className = 'vacancy-card';
+
+        const created = article.created
+          ? new Date(article.created).toLocaleString('ru-RU')
+          : 'Неизвестно';
 
         card.innerHTML = `
-          <div class="news-title">${news.title || 'Без заголовка'}</div>
-          <div class="news-summary">${news.summary || ''}</div>
-          <div><strong>Источник:</strong> ${news.source || 'Неизвестно'}</div>
-          ${news.url ? `<a href="${news.url}" target="_blank" class="news-link">Читать далее</a>` : ''}
+          <div class="vacancy-title">${article.title_ru || article.title_en || 'Без заголовка'}</div>
+          <div class="vacancy-desc">${article.summary_ru || article.summary_en || ''}</div>
+          <div><strong>Источник:</strong> ${article.source || '—'}</div>
+          <div><strong>Дата:</strong> ${created}</div>
+          ${article.url ? `<a class="vacancy-link" href="${article.url}" target="_blank">Читать далее</a>` : ''}
         `;
+
         container.appendChild(card);
       });
     }
 
     function renderPagination() {
-      const paginationContainer = document.getElementById('pagination');
-      paginationContainer.innerHTML = '';
-
+      const pagination = document.getElementById('pagination');
+      pagination.innerHTML = '';
       const totalPages = Math.ceil(filteredNews.length / ITEMS_PER_PAGE);
+
       if (totalPages <= 1) return;
 
       for (let i = 1; i <= totalPages; i++) {
@@ -213,13 +228,14 @@
           renderPagination();
           window.scrollTo({ top: 0, behavior: 'smooth' });
         });
-        paginationContainer.appendChild(btn);
+        pagination.appendChild(btn);
       }
     }
 
     window.onload = () => {
       loadNews();
-      document.getElementById('refreshBtn').addEventListener('click', loadNews);
+
+      document.getElementById('refreshBtn').addEventListener('click', () => loadNews());
       document.getElementById('searchInput').addEventListener('input', applyFilters);
       document.getElementById('sourceFilter').addEventListener('change', applyFilters);
       document.getElementById('resetFilter').addEventListener('click', () => {
@@ -231,14 +247,14 @@
   </script>
 </head>
 <body>
-  <h1>Лента новостей</h1>
+  <h1>Новости</h1>
   <div id="controls">
     <button id="refreshBtn">Обновить</button>
     <input type="text" id="searchInput" placeholder="Поиск по заголовку" />
     <select id="sourceFilter"></select>
     <button id="resetFilter">Сбросить фильтр</button>
   </div>
-  <div id="news"></div>
+  <div id="vacancies"></div>
   <div id="pagination"></div>
 </body>
 </html>
