@@ -1,9 +1,8 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>Вакансии по Турции</title>
+  <title>Лента новостей</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; background: #f9f9f9; }
     h1 {
@@ -27,13 +26,8 @@
       border: none;
       border-radius: 5px;
       color: white;
-      transition: background-color 0.3s ease;
-      flex-shrink: 0;
     }
-    #refreshBtn:hover, #resetFilter:hover {
-      background-color: #0056b3;
-    }
-    #searchInput, #cityFilter {
+    #searchInput, #sourceFilter {
       padding: 8px;
       font-size: 1em;
       border-radius: 5px;
@@ -41,36 +35,35 @@
       min-width: 200px;
       max-width: 300px;
       flex-grow: 1;
-      flex-basis: 200px;
     }
-    #vacancies {
+    #news {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 15px;
     }
-    .vacancy-card {
+    .news-card {
       border: 1px solid #ddd;
       padding: 15px;
       border-radius: 5px;
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
       background-color: white;
     }
-    .vacancy-title {
+    .news-title {
       font-weight: bold;
       font-size: 1.2em;
       margin-bottom: 8px;
       color: #222;
     }
-    .vacancy-desc {
+    .news-summary {
       margin-bottom: 8px;
       color: #555;
     }
-    .vacancy-link {
+    .news-link {
       color: #007bff;
       text-decoration: none;
       font-weight: 600;
     }
-    .vacancy-link:hover {
+    .news-link:hover {
       text-decoration: underline;
     }
     #pagination {
@@ -90,100 +83,85 @@
       background-color: white;
       color: #007bff;
       border-radius: 5px;
-      transition: background-color 0.3s ease, color 0.3s ease;
     }
     #pagination button.active,
     #pagination button:hover {
       background-color: #007bff;
       color: white;
     }
-
-    /* Адаптив */
     @media (max-width: 700px) {
-      #vacancies {
-        grid-template-columns: 1fr;
-      }
-      #controls {
-        flex-direction: column;
-        align-items: stretch;
-      }
-      #refreshBtn, #resetFilter, #searchInput, #cityFilter {
-        min-width: auto;
-        width: 100%;
-        box-sizing: border-box;
-      }
+      #news { grid-template-columns: 1fr; }
+      #controls { flex-direction: column; align-items: stretch; }
     }
   </style>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.0/firebase-app.js";
     import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
-     apiKey: "AIzaSyB15DfYRfexQNhiToIrqBb5L7hRIEctM3I",
-  authDomain: "news-d2cb9.firebaseapp.com",
-  projectId: "news-d2cb9",
-  storageBucket: "news-d2cb9.firebasestorage.app",
-  messagingSenderId: "59311537316",
-  appId: "1:59311537316:web:2bd53798a9085263b2ba31",
-  measurementId: "G-4D8G8PHXQ4"
+      apiKey: "AIzaSyB15DfYRfexQNhiToIrqBb5L7hRIEctM3I",
+      authDomain: "news-d2cb9.firebaseapp.com",
+      projectId: "news-d2cb9",
+      storageBucket: "news-d2cb9.appspot.com",
+      messagingSenderId: "59311537316",
+      appId: "1:59311537316:web:2bd53798a9085263b2ba31",
+      measurementId: "G-4D8G8PHXQ4"
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
     const ITEMS_PER_PAGE = 50;
-    let allVacancies = [];
-    let filteredVacancies = [];
+    let allNews = [];
+    let filteredNews = [];
     let currentPage = 1;
 
-    async function loadVacancies() {
-      const vacanciesContainer = document.getElementById('vacancies');
-      vacanciesContainer.innerHTML = '<p>Загрузка вакансий...</p>';
-
+    async function loadNews() {
+      const container = document.getElementById('news');
+      container.innerHTML = '<p>Загрузка новостей...</p>';
       try {
-        const querySnapshot = await getDocs(collection(db, "vacancies"));
-        allVacancies = [];
-        querySnapshot.forEach((doc) => {
-          const vacancy = doc.data();
-          vacancy.id = doc.id;
-          allVacancies.push(vacancy);
+        const querySnapshot = await getDocs(collection(db, "news"));
+        allNews = [];
+        querySnapshot.forEach(doc => {
+          const newsItem = doc.data();
+          newsItem.id = doc.id;
+          allNews.push(newsItem);
         });
 
-        if (allVacancies.length === 0) {
-          vacanciesContainer.innerHTML = '<p>Вакансий пока нет.</p>';
+        if (allNews.length === 0) {
+          container.innerHTML = '<p>Новостей пока нет.</p>';
           return;
         }
 
-        setupCityFilter();
+        setupSourceFilter();
         applyFilters();
       } catch (error) {
-        vacanciesContainer.innerHTML = `<p>Ошибка загрузки: ${error.message}</p>`;
+        container.innerHTML = `<p>Ошибка загрузки: ${error.message}</p>`;
       }
     }
 
-    function setupCityFilter() {
-      const cityFilter = document.getElementById('cityFilter');
-      const cities = Array.from(new Set(allVacancies.map(v => v.city).filter(Boolean))).sort();
+    function setupSourceFilter() {
+      const sourceFilter = document.getElementById('sourceFilter');
+      const sources = Array.from(new Set(allNews.map(n => n.source).filter(Boolean))).sort();
 
-      cityFilter.innerHTML = '<option value="">Все города</option>';
-      cities.forEach(city => {
+      sourceFilter.innerHTML = '<option value="">Все источники</option>';
+      sources.forEach(source => {
         const option = document.createElement('option');
-        option.value = city;
-        option.textContent = city;
-        cityFilter.appendChild(option);
+        option.value = source;
+        option.textContent = source;
+        sourceFilter.appendChild(option);
       });
     }
 
     function applyFilters() {
       const searchValue = document.getElementById('searchInput').value.toLowerCase();
-      const cityValue = document.getElementById('cityFilter').value;
+      const sourceValue = document.getElementById('sourceFilter').value;
 
-      filteredVacancies = allVacancies.filter(v => {
-        const title = (v.title_ru || v.title || '').toLowerCase();
-        const city = v.city || '';
-        const matchesSearch = title.includes(searchValue);
-        const matchesCity = cityValue === '' || city === cityValue;
-        return matchesSearch && matchesCity;
+      filteredNews = allNews.filter(n => {
+        const title = (n.title || '').toLowerCase();
+        const source = n.source || '';
+        return title.includes(searchValue) && (sourceValue === '' || source === sourceValue);
       });
 
       currentPage = 1;
@@ -192,30 +170,29 @@
     }
 
     function renderPage(page) {
-      const vacanciesContainer = document.getElementById('vacancies');
-      vacanciesContainer.innerHTML = '';
+      const container = document.getElementById('news');
+      container.innerHTML = '';
 
       const start = (page - 1) * ITEMS_PER_PAGE;
       const end = start + ITEMS_PER_PAGE;
-      const pageItems = filteredVacancies.slice(start, end);
+      const pageItems = filteredNews.slice(start, end);
 
       if (pageItems.length === 0) {
-        vacanciesContainer.innerHTML = '<p>Вакансий нет на этой странице.</p>';
+        container.innerHTML = '<p>Нет новостей для отображения.</p>';
         return;
       }
 
-      pageItems.forEach(vacancy => {
+      pageItems.forEach(news => {
         const card = document.createElement('div');
-        card.className = 'vacancy-card';
+        card.className = 'news-card';
 
         card.innerHTML = `
-          <div class="vacancy-title">${vacancy.title_ru || vacancy.title || 'Без названия'}</div>
-          <div class="vacancy-desc">${vacancy.description || vacancy.title_tr || ''}</div>
-          <div><strong>Город:</strong> ${vacancy.city || 'Не указано'}</div>
-          <div><strong>Компания:</strong> ${vacancy.company || 'Не указано'}</div>
-          ${vacancy.url ? `<a href="${vacancy.url}" target="_blank" class="vacancy-link">Подробнее</a>` : ''}
+          <div class="news-title">${news.title || 'Без заголовка'}</div>
+          <div class="news-summary">${news.summary || ''}</div>
+          <div><strong>Источник:</strong> ${news.source || 'Неизвестно'}</div>
+          ${news.url ? `<a href="${news.url}" target="_blank" class="news-link">Читать далее</a>` : ''}
         `;
-        vacanciesContainer.appendChild(card);
+        container.appendChild(card);
       });
     }
 
@@ -223,15 +200,13 @@
       const paginationContainer = document.getElementById('pagination');
       paginationContainer.innerHTML = '';
 
-      const totalPages = Math.ceil(filteredVacancies.length / ITEMS_PER_PAGE);
+      const totalPages = Math.ceil(filteredNews.length / ITEMS_PER_PAGE);
       if (totalPages <= 1) return;
 
       for (let i = 1; i <= totalPages; i++) {
         const btn = document.createElement('button');
         btn.textContent = i;
-        if (i === currentPage) {
-          btn.classList.add('active');
-        }
+        if (i === currentPage) btn.classList.add('active');
         btn.addEventListener('click', () => {
           currentPage = i;
           renderPage(currentPage);
@@ -243,37 +218,27 @@
     }
 
     window.onload = () => {
-      loadVacancies();
-
-      document.getElementById('refreshBtn').addEventListener('click', () => {
-        loadVacancies();
-      });
-
-      document.getElementById('searchInput').addEventListener('input', () => {
-        applyFilters();
-      });
-
-      document.getElementById('cityFilter').addEventListener('change', () => {
-        applyFilters();
-      });
-
+      loadNews();
+      document.getElementById('refreshBtn').addEventListener('click', loadNews);
+      document.getElementById('searchInput').addEventListener('input', applyFilters);
+      document.getElementById('sourceFilter').addEventListener('change', applyFilters);
       document.getElementById('resetFilter').addEventListener('click', () => {
         document.getElementById('searchInput').value = '';
-        document.getElementById('cityFilter').value = '';
+        document.getElementById('sourceFilter').value = '';
         applyFilters();
       });
     };
   </script>
 </head>
 <body>
-  <h1>Вакансии по Турции</h1>
+  <h1>Лента новостей</h1>
   <div id="controls">
-    <button id="refreshBtn">Обновить список</button>
-    <input type="text" id="searchInput" placeholder="Поиск по названию" />
-    <select id="cityFilter"></select>
+    <button id="refreshBtn">Обновить</button>
+    <input type="text" id="searchInput" placeholder="Поиск по заголовку" />
+    <select id="sourceFilter"></select>
     <button id="resetFilter">Сбросить фильтр</button>
   </div>
-  <div id="vacancies"></div>
+  <div id="news"></div>
   <div id="pagination"></div>
 </body>
 </html>
