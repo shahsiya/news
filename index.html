@@ -1,0 +1,278 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Вакансии по Турции</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f9f9f9; }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #333;
+      font-size: 2em;
+    }
+    #controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    #refreshBtn, #resetFilter {
+      padding: 10px 20px;
+      font-size: 1em;
+      cursor: pointer;
+      background-color: #007bff;
+      border: none;
+      border-radius: 5px;
+      color: white;
+      transition: background-color 0.3s ease;
+      flex-shrink: 0;
+    }
+    #refreshBtn:hover, #resetFilter:hover {
+      background-color: #0056b3;
+    }
+    #searchInput, #cityFilter {
+      padding: 8px;
+      font-size: 1em;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      min-width: 200px;
+      max-width: 300px;
+      flex-grow: 1;
+      flex-basis: 200px;
+    }
+    #vacancies {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+    }
+    .vacancy-card {
+      border: 1px solid #ddd;
+      padding: 15px;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      background-color: white;
+    }
+    .vacancy-title {
+      font-weight: bold;
+      font-size: 1.2em;
+      margin-bottom: 8px;
+      color: #222;
+    }
+    .vacancy-desc {
+      margin-bottom: 8px;
+      color: #555;
+    }
+    .vacancy-link {
+      color: #007bff;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .vacancy-link:hover {
+      text-decoration: underline;
+    }
+    #pagination {
+      text-align: center;
+      margin-top: 25px;
+      flex-wrap: wrap;
+      display: flex;
+      justify-content: center;
+      gap: 5px;
+    }
+    #pagination button {
+      margin: 0 3px;
+      padding: 8px 12px;
+      font-size: 1em;
+      cursor: pointer;
+      border: 1px solid #007bff;
+      background-color: white;
+      color: #007bff;
+      border-radius: 5px;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+    #pagination button.active,
+    #pagination button:hover {
+      background-color: #007bff;
+      color: white;
+    }
+
+    /* Адаптив */
+    @media (max-width: 700px) {
+      #vacancies {
+        grid-template-columns: 1fr;
+      }
+      #controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      #refreshBtn, #resetFilter, #searchInput, #cityFilter {
+        min-width: auto;
+        width: 100%;
+        box-sizing: border-box;
+      }
+    }
+  </style>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.0/firebase-app.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDslmTQU5CCDlBRFWLwqIaGW3HLFnGhTIg",
+      authDomain: "vakansii-turkey.firebaseapp.com",
+      projectId: "vakansii-turkey",
+      storageBucket: "vakansii-turkey.appspot.com",
+      messagingSenderId: "41794264957",
+      appId: "1:41794264957:web:4f731aea57c51d24ec7614"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const ITEMS_PER_PAGE = 50;
+    let allVacancies = [];
+    let filteredVacancies = [];
+    let currentPage = 1;
+
+    async function loadVacancies() {
+      const vacanciesContainer = document.getElementById('vacancies');
+      vacanciesContainer.innerHTML = '<p>Загрузка вакансий...</p>';
+
+      try {
+        const querySnapshot = await getDocs(collection(db, "vacancies"));
+        allVacancies = [];
+        querySnapshot.forEach((doc) => {
+          const vacancy = doc.data();
+          vacancy.id = doc.id;
+          allVacancies.push(vacancy);
+        });
+
+        if (allVacancies.length === 0) {
+          vacanciesContainer.innerHTML = '<p>Вакансий пока нет.</p>';
+          return;
+        }
+
+        setupCityFilter();
+        applyFilters();
+      } catch (error) {
+        vacanciesContainer.innerHTML = `<p>Ошибка загрузки: ${error.message}</p>`;
+      }
+    }
+
+    function setupCityFilter() {
+      const cityFilter = document.getElementById('cityFilter');
+      const cities = Array.from(new Set(allVacancies.map(v => v.city).filter(Boolean))).sort();
+
+      cityFilter.innerHTML = '<option value="">Все города</option>';
+      cities.forEach(city => {
+        const option = document.createElement('option');
+        option.value = city;
+        option.textContent = city;
+        cityFilter.appendChild(option);
+      });
+    }
+
+    function applyFilters() {
+      const searchValue = document.getElementById('searchInput').value.toLowerCase();
+      const cityValue = document.getElementById('cityFilter').value;
+
+      filteredVacancies = allVacancies.filter(v => {
+        const title = (v.title_ru || v.title || '').toLowerCase();
+        const city = v.city || '';
+        const matchesSearch = title.includes(searchValue);
+        const matchesCity = cityValue === '' || city === cityValue;
+        return matchesSearch && matchesCity;
+      });
+
+      currentPage = 1;
+      renderPage(currentPage);
+      renderPagination();
+    }
+
+    function renderPage(page) {
+      const vacanciesContainer = document.getElementById('vacancies');
+      vacanciesContainer.innerHTML = '';
+
+      const start = (page - 1) * ITEMS_PER_PAGE;
+      const end = start + ITEMS_PER_PAGE;
+      const pageItems = filteredVacancies.slice(start, end);
+
+      if (pageItems.length === 0) {
+        vacanciesContainer.innerHTML = '<p>Вакансий нет на этой странице.</p>';
+        return;
+      }
+
+      pageItems.forEach(vacancy => {
+        const card = document.createElement('div');
+        card.className = 'vacancy-card';
+
+        card.innerHTML = `
+          <div class="vacancy-title">${vacancy.title_ru || vacancy.title || 'Без названия'}</div>
+          <div class="vacancy-desc">${vacancy.description || vacancy.title_tr || ''}</div>
+          <div><strong>Город:</strong> ${vacancy.city || 'Не указано'}</div>
+          <div><strong>Компания:</strong> ${vacancy.company || 'Не указано'}</div>
+          ${vacancy.url ? `<a href="${vacancy.url}" target="_blank" class="vacancy-link">Подробнее</a>` : ''}
+        `;
+        vacanciesContainer.appendChild(card);
+      });
+    }
+
+    function renderPagination() {
+      const paginationContainer = document.getElementById('pagination');
+      paginationContainer.innerHTML = '';
+
+      const totalPages = Math.ceil(filteredVacancies.length / ITEMS_PER_PAGE);
+      if (totalPages <= 1) return;
+
+      for (let i = 1; i <= totalPages; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i;
+        if (i === currentPage) {
+          btn.classList.add('active');
+        }
+        btn.addEventListener('click', () => {
+          currentPage = i;
+          renderPage(currentPage);
+          renderPagination();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        paginationContainer.appendChild(btn);
+      }
+    }
+
+    window.onload = () => {
+      loadVacancies();
+
+      document.getElementById('refreshBtn').addEventListener('click', () => {
+        loadVacancies();
+      });
+
+      document.getElementById('searchInput').addEventListener('input', () => {
+        applyFilters();
+      });
+
+      document.getElementById('cityFilter').addEventListener('change', () => {
+        applyFilters();
+      });
+
+      document.getElementById('resetFilter').addEventListener('click', () => {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('cityFilter').value = '';
+        applyFilters();
+      });
+    };
+  </script>
+</head>
+<body>
+  <h1>Вакансии по Турции</h1>
+  <div id="controls">
+    <button id="refreshBtn">Обновить список</button>
+    <input type="text" id="searchInput" placeholder="Поиск по названию" />
+    <select id="cityFilter"></select>
+    <button id="resetFilter">Сбросить фильтр</button>
+  </div>
+  <div id="vacancies"></div>
+  <div id="pagination"></div>
+</body>
+</html>
