@@ -19,9 +19,10 @@ let allNews = [];
 let filteredNews = [];
 let currentPage = 1;
 
+const newsContainer = document.getElementById('news-container');  // или #vacancies — проверь свой HTML
+
 async function loadNews() {
-  const container = document.getElementById('vacancies');
-  container.innerHTML = '<p>Загрузка новостей...</p>';
+  newsContainer.innerHTML = '<p>Загрузка новостей...</p>';
 
   try {
     const querySnapshot = await getDocs(collection(db, "news"));
@@ -36,12 +37,14 @@ async function loadNews() {
     setupSourceFilter();
     applyFilters();
   } catch (error) {
-    container.innerHTML = `<p>Ошибка загрузки: ${error.message}</p>`;
+    newsContainer.innerHTML = `<p>Ошибка загрузки: ${error.message}</p>`;
   }
 }
 
 function setupSourceFilter() {
   const sourceFilter = document.getElementById('sourceFilter');
+  if (!sourceFilter) return;
+
   const sources = Array.from(new Set(allNews.map(n => n.source).filter(Boolean))).sort();
 
   sourceFilter.innerHTML = '<option value="">Все источники</option>';
@@ -54,8 +57,8 @@ function setupSourceFilter() {
 }
 
 function applyFilters() {
-  const searchVal = document.getElementById('searchInput').value.toLowerCase();
-  const sourceVal = document.getElementById('sourceFilter').value;
+  const searchVal = document.getElementById('searchInput')?.value.toLowerCase() || '';
+  const sourceVal = document.getElementById('sourceFilter')?.value || '';
 
   filteredNews = allNews.filter(n => {
     const title = (n.title_ru || n.title_en || '').toLowerCase();
@@ -71,41 +74,44 @@ function applyFilters() {
 }
 
 function renderPage(page) {
-  const container = document.getElementById('vacancies');
-  container.innerHTML = '';
+  newsContainer.innerHTML = '';
 
   const start = (page - 1) * ITEMS_PER_PAGE;
   const end = start + ITEMS_PER_PAGE;
   const pageItems = filteredNews.slice(start, end);
 
   if (pageItems.length === 0) {
-    container.innerHTML = '<p>Новостей не найдено.</p>';
+    newsContainer.innerHTML = '<p>Новостей не найдено.</p>';
     return;
   }
 
   pageItems.forEach(article => {
-    const card = document.createElement('div');
-    card.className = 'vacancy-card';
-
     const created = article.created
       ? new Date(article.created).toLocaleString('ru-RU')
       : 'Неизвестно';
 
+    const card = document.createElement('div');
+    card.className = 'news-card';
+
     card.innerHTML = `
-      ${article.image_url ? `<img src="${article.image_url}" alt="Изображение новости" />` : ''}
-      <div class="vacancy-title">${article.title_ru || article.title_en || 'Без заголовка'}</div>
-      <div class="vacancy-desc">${article.summary_ru || article.summary_en || ''}</div>
+      ${article.image_url ? `<img src="${article.image_url}" alt="Изображение новости" style="max-width:100%; height:auto" />` : ''}
+      <h3>${article.title_ru || article.title_en || 'Без заголовка'}</h3>
+      <p>${article.summary_ru || article.summary_en || ''}</p>
       <div><strong>Источник:</strong> ${article.source || '—'}</div>
       <div><strong>Дата:</strong> ${created}</div>
-      ${article.url ? `<a class="vacancy-link" href="${article.url}" target="_blank">Читать далее</a>` : ''}
+      ${article.url ? `<p><a href="${article.url}" target="_blank">Открыть источник</a></p>` : ''}
+      <button class="analyze-btn" data-id="${article.id}">Анализировать</button>
+      <div class="analysis-result" id="analysis-${article.id}"></div>
     `;
 
-    container.appendChild(card);
+    newsContainer.appendChild(card);
   });
 }
 
 function renderPagination() {
   const pagination = document.getElementById('pagination');
+  if (!pagination) return;
+
   pagination.innerHTML = '';
   const totalPages = Math.ceil(filteredNews.length / ITEMS_PER_PAGE);
 
@@ -125,15 +131,51 @@ function renderPagination() {
   }
 }
 
+// Обработка кликов на кнопки "Анализировать"
+document.addEventListener('click', async (e) => {
+  if (e.target.classList.contains('analyze-btn')) {
+    const newsId = e.target.getAttribute('data-id');
+    const resultDiv = document.getElementById(`analysis-${newsId}`);
+    if (!resultDiv) return;
+
+    resultDiv.innerHTML = '⏳ Анализируем...';
+
+    try {
+      const res = await fetch(`/api/news/${newsId}/analyze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      const data = await res.json();
+      if (data.analysis) {
+        resultDiv.innerHTML = `<pre>${JSON.stringify(data.analysis, null, 2)}</pre>`;
+      } else {
+        resultDiv.innerHTML = '❌ Анализ не удалось получить';
+      }
+    } catch (err) {
+      resultDiv.innerHTML = '⚠️ Ошибка при анализе';
+      console.error('Ошибка анализа:', err);
+    }
+  }
+});
+
+// События для фильтров и кнопок обновления
 window.onload = () => {
   loadNews();
 
-  document.getElementById('refreshBtn').addEventListener('click', () => loadNews());
-  document.getElementById('searchInput').addEventListener('input', applyFilters);
-  document.getElementById('sourceFilter').addEventListener('change', applyFilters);
-  document.getElementById('resetFilter').addEventListener('click', () => {
-    document.getElementById('searchInput').value = '';
-    document.getElementById('sourceFilter').value = '';
+  const refreshBtn = document.getElementById('refreshBtn');
+  if (refreshBtn) refreshBtn.addEventListener('click', () => loadNews());
+
+  const searchInput = document.getElementById('searchInput');
+  if (searchInput) searchInput.addEventListener('input', applyFilters);
+
+  const sourceFilter = document.getElementById('sourceFilter');
+  if (sourceFilter) sourceFilter.addEventListener('change', applyFilters);
+
+  const resetFilter = document.getElementById('resetFilter');
+  if (resetFilter) resetFilter.addEventListener('click', () => {
+    if (searchInput) searchInput.value = '';
+    if (sourceFilter) sourceFilter.value = '';
     applyFilters();
   });
 };
