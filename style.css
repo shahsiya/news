@@ -153,3 +153,53 @@ h1 {
     font-size: 1.5em;
   }
 }
+/* Шапка с логотипом и заголовком */
+#header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 25px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+#logo img {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 0 5px rgba(0,0,0,0.1);
+}
+
+#title h1 {
+  margin: 0;
+  font-size: 2em;
+  color: #333;
+}
+
+#title p {
+  margin: 2px 0 0;
+  font-size: 1em;
+  color: #666;
+  font-style: italic;
+}
+
+/* Адаптив для мобильных */
+@media (max-width: 700px) {
+  #header {
+    flex-direction: column;
+  }
+
+  #logo img {
+    width: 40px;
+    height: 40px;
+  }
+
+  #title h1 {
+    font-size: 1.5em;
+  }
+
+  #title p {
+    font-size: 0.9em;
+  }
+}
