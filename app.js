@@ -92,7 +92,7 @@ function renderPage(page) {
       : 'Неизвестно';
 
     const card = document.createElement('div');
-    card.className = 'news-card';
+    card.className = 'vacancy-card';
 
     card.innerHTML = `
       ${article.image_url ? `<img src="${article.image_url}" alt="Изображение новости" style="max-width:100%; height:auto" />` : ''}
