@@ -1,0 +1,155 @@
+body { 
+  font-family: Arial, sans-serif; 
+  margin: 20px; 
+  background: #f9f9f9; 
+}
+
+h1 { 
+  text-align: center; 
+  margin-bottom: 20px; 
+  color: #333; 
+  font-size: 2em; 
+}
+
+#controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+#refreshBtn, #resetFilter {
+  padding: 10px 20px;
+  font-size: 1em;
+  background-color: #007bff;
+  border: none;
+  border-radius: 5px;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+#refreshBtn:hover, #resetFilter:hover {
+  background-color: #0056b3;
+}
+
+#searchInput, #sourceFilter {
+  padding: 8px;
+  font-size: 1em;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  min-width: 200px;
+  transition: border-color 0.3s ease;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+#vacancies {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 15px;
+}
+
+.vacancy-card {
+  border: 1px solid #ddd;
+  padding: 15px;
+  border-radius: 5px;
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.vacancy-card img {
+  width: 100%;
+  border-radius: 5px;
+  margin-bottom: 10px;
+  object-fit: cover;
+  max-height: 180px;
+}
+
+.vacancy-title, .vacancy-desc {
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.vacancy-title {
+  font-size: 1.1em;
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: #222;
+}
+
+.vacancy-desc {
+  margin-bottom: 10px;
+  color: #555;
+}
+
+.vacancy-link {
+  color: #007bff;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.vacancy-link:hover {
+  text-decoration: underline;
+}
+
+#pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 25px;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+#pagination button {
+  padding: 6px 12px;
+  font-size: 1em;
+  border: 1px solid #007bff;
+  background-color: white;
+  color: #007bff;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+#pagination button.active,
+#pagination button:hover {
+  background-color: #007bff;
+  color: white;
+}
+
+/* --- Адаптив для мобильных --- */
+@media (max-width: 700px) {
+  #controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  #controls > * {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  #sourceFilter {
+    max-width: 100%;
+  }
+
+  #vacancies {
+    grid-template-columns: 1fr;
+  }
+
+  .vacancy-card {
+    width: 100% !important;
+  }
+
+  body {
+    margin: 10px;
+  }
+
+  h1 {
+    font-size: 1.5em;
+  }
+}
