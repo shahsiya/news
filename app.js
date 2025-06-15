@@ -19,7 +19,8 @@ let allNews = [];
 let filteredNews = [];
 let currentPage = 1;
 
-const newsContainer = document.getElementById('news-container');  // или #vacancies — проверь свой HTML
+const newsContainer = document.getElementById('vacancies');
+  // или #vacancies — проверь свой HTML
 
 async function loadNews() {
   newsContainer.innerHTML = '<p>Загрузка новостей...</p>';
