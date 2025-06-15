@@ -1,3 +1,10 @@
+/* Общие настройки */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 body { 
   font-family: Arial, sans-serif; 
   margin: 20px; 
@@ -11,6 +18,7 @@ h1 {
   font-size: 2em; 
 }
 
+/* Контролы (кнопки, фильтры) */
 #controls {
   display: flex;
   flex-wrap: wrap;
@@ -40,11 +48,11 @@ h1 {
   border-radius: 5px;
   border: 1px solid #ccc;
   min-width: 200px;
-  transition: border-color 0.3s ease;
   max-width: 100%;
-  box-sizing: border-box;
+  transition: border-color 0.3s ease;
 }
 
+/* Сетка карточек */
 #vacancies {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
@@ -58,7 +66,6 @@ h1 {
   background-color: white;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   width: 100%;
-  box-sizing: border-box;
 }
 
 .vacancy-card img {
@@ -96,6 +103,7 @@ h1 {
   text-decoration: underline;
 }
 
+/* Пагинация */
 #pagination {
   display: flex;
   justify-content: center;
@@ -121,8 +129,68 @@ h1 {
   color: white;
 }
 
+/* --- Шапка с логотипом и заголовком --- */
+#header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 25px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+#logo {
+  flex-shrink: 0; /* чтобы не сжимался */
+  margin-right: 10px;
+}
+
+#logo img {
+  max-width: 40px;
+  max-height: 40px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 6px;
+  box-shadow: 0 0 4px rgba(0,0,0,0.1);
+}
+
+#title h1 {
+  margin: 0;
+  font-size: 2em;
+  color: #333;
+}
+
+#title p {
+  margin: 2px 0 0;
+  font-size: 1em;
+  color: #666;
+  font-style: italic;
+}
+
 /* --- Адаптив для мобильных --- */
 @media (max-width: 700px) {
+  #header {
+    flex-direction: column;
+  }
+
+  #logo {
+    margin-right: 0;
+    margin-bottom: 10px;
+  }
+
+  #logo img {
+    width: 40px;
+    height: 40px;
+  }
+
+  #title h1 {
+    font-size: 1.5em;
+  }
+
+  #title p {
+    font-size: 0.9em;
+  }
+
   #controls {
     flex-direction: column;
     align-items: stretch;
@@ -130,11 +198,6 @@ h1 {
 
   #controls > * {
     width: 100%;
-    box-sizing: border-box;
-  }
-
-  #sourceFilter {
-    max-width: 100%;
   }
 
   #vacancies {
@@ -152,61 +215,4 @@ h1 {
   h1 {
     font-size: 1.5em;
   }
-}
-/* Шапка с логотипом и заголовком */
-#header {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  margin-bottom: 25px;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-#logo img {
-  max-width: 40px;
-  max-height: 40px;
-  width: auto;
-  height: auto;
-  object-fit: contain;
-  border-radius: 6px;
-  box-shadow: 0 0 4px rgba(0,0,0,0.1);
-}
-
-
-#title h1 {
-  margin: 0;
-  font-size: 2em;
-  color: #333;
-}
-
-#title p {
-  margin: 2px 0 0;
-  font-size: 1em;
-  color: #666;
-  font-style: italic;
-}
-
-/* Адаптив для мобильных */
-@media (max-width: 700px) {
-  #header {
-    flex-direction: column;
-  }
-
-  #logo img {
-    width: 40px;
-    height: 40px;
-  }
-
-  #title h1 {
-    font-size: 1.5em;
-  }
-
-  #title p {
-    font-size: 0.9em;
-  }
-}
-#logo {
-  margin-right: 10px;
-  flex-shrink: 0; /* чтобы не сжимался */
 }
